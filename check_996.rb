@@ -6,6 +6,7 @@ require 'date'
 DAY_BEGIN = '00:00:00'
 DAY_END   = '23:59:59'
 
+VERSION = "1.0.0"
 class String
   def blue
     return "\033[34m #{self}\033[0m"
@@ -340,7 +341,7 @@ OptionParser.new do |opts|
   end
 
   opts.on("-v", "--version", "version") do
-    puts "Check996 v1.0.0"
+    puts "Check996 v#{VERSION}"
     puts ""
     puts "author: Mark24Code"
     puts "repo: https://github.com/Mark24Code/check_996"
