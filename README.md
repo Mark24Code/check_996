@@ -36,12 +36,6 @@ run this code.
 ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Mark24Code/check_996/main/check_996.rb)"
 ```
 
-* wget support
-
-```bash
-ruby -e "$(wget https://raw.githubusercontent.com/Mark24Code/check_996/main/check_996.rb -O -)"
-```
-
 ## Tips：
 
 remote run add params 
