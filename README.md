@@ -18,8 +18,11 @@ Usage: count_code.rb [options]
 make sure you have  `ruby 2.7+`, `curl` or `wget` will be helpful.
 ### step1:
 
-cd your git code repo:
+cd your git code repo directory.
 
+```bash
+cd </path/to/your/git_repo>
+```
 
 ### step2: 
 
