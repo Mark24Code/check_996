@@ -32,6 +32,8 @@ class GitCounter
     @start_time = opts.fetch(:start_time, '10:00:00')
     @end_time = opts.fetch(:end_time, '18:00:00')
 
+    @range = opts.fetch(:range, nil)
+
     @commits = []
 
     @day_grouping = {}
@@ -52,6 +54,19 @@ class GitCounter
         @commits.push Time.at($1.strip.to_i)
       end
     end
+
+    # filter
+    if @range && @range.length == 2
+
+      range_start_time, range_end_time = @range
+      unix_start = range_start_time.to_time
+      unix_end = range_end_time.to_time
+
+      @commits = @commits.select do |c|
+        return c >= unix_start && c <= unix_end
+      end
+    end
+
   end
 
   def day_grouping(commit_time)
@@ -183,18 +198,111 @@ def validator(text)
   end
 end
 
+def invalid_param(i, msg = nil)
+  puts "invalid: " + "#{i}".yellow
+  if msg
+    puts "tips:".cyan + msg
+  end
+end
+
+def time_range_gen(time_type, time_count)
+  end_time = Time.now
+  
+  if time_type == 'day'
+    start_time = Date.today - time_count
+    end_time = Date.today
+  end
+
+  if time_type == 'week'
+    start_time = Date.today - time_count * 7
+  end
+
+  if time_type == 'month'
+    start_time = Date.today - time_count * 30
+  end
+
+  if time_type == 'year'
+    start_time = Date.today - time_count * 365
+  end
+
+  if time_type == 'range'
+    start_time, end_time = time_count
+  end
+
+  return [start_time, end_time]
+end
+
+def then_quit
+  exit 0
+end
+
+def validator_range(text)
+  text = text.strip
+
+  case text
+  when 'last_day'
+    return time_range_gen('day', 1)
+  when 'last_week'
+    return time_range_gen('week', 1)
+  when 'last_month'
+    return time_range_gen('month', 1)
+  when 'last_year'
+    return time_range_gen('year', 1)
+  when /last_(\d*)_(day|week|month|year)/
+    time_count = nil
+    if $1.to_i < 0
+      invalid_param(text, "#{$2} number should > 0")
+      then_quit
+    end
+
+    if $1.to_i == 0
+      puts "#{text} -> will use `last_#{$2}`"
+      time_range_gen($2, 1)
+    end
+
+    time_count = $1.to_i
+    return time_range_gen($2, time_count)
+  when /(\d{4}\-\d{2}\-\d{2} \d{2}:\d{2}:\d{2}),(\d{4}\-\d{2}\-\d{2} \d{2}:\d{2}:\d{2})/
+    ft = "%Y-%m-%d %T"
+    range_start_time_catch = $1
+    range_end_time_catch = $2
+    range_start_time = DateTime.strptime(range_start_time_catch,ft)
+    range_end_time = DateTime.strptime(range_end_time_catch,ft)
+    if range_start_time >= range_end_time
+      invalid_param(text, "time range order wrong. start_time < end_time")
+      then_quit
+    end
+    return time_range_gen('range', [range_start_time, range_end_time])
+
+  else
+    puts "check your -f params, more details `-h`".yellow
+    then_quit
+  end
+end
+
 options = {}
 OptionParser.new do |opts|
   opts.banner = "Usage: count_code.rb [options]"
 
-  opts.on("-s", "--start [TIME]", "start job time e.g. 10:00:00") do |t|
+  opts.on("-s WORK_START_TIME", "--start WORK_START_TIME", "start job time e.g. 10:00:00") do |t|
     validator(t)
     options[:start_time] = t
   end
-  opts.on("-e", "--end [TIME]", "end job time  e.g. 18:00:00") do |t|
+  opts.on("-e WORK_END_TIME", "--end WORK_END_TIME", "end job time  e.g. 18:00:00") do |t|
     validator(t)
     options[:end_time] = t
   end
+
+  opts.on("-f FILTER", "--filter FILTER ", "time range filter  e.g. last_[day|week|month|year] last_5_[day|week|month|year]   '2022-01-01 08:10:00,2022-10-01 08:10:00'") do |t|
+    if t
+      range_time = validator_range(t)
+      options[:range] = range_time
+    else
+      options[:range] = nil
+    end
+
+  end
+
   opts.on("-v", "--version", "version") do
     puts "Check996 v1.0.0"
     puts ""
@@ -204,5 +312,5 @@ OptionParser.new do |opts|
   end
 end.parse!
 
-
+# puts options
 GitCounter.new(options).run
