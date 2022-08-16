@@ -135,7 +135,7 @@ class GitCounter
   end
 
   def report
-    report_title = "=" * 8 + " Report " + "=" * 8
+    report_title = "=" * 8 + " Check 996 Report " + "=" * 8
     puts report_title.cyan
     puts "You expected worktime: " + "#{@start_time} ~ #{@end_time}".green
 

@@ -13,6 +13,9 @@ Usage: count_code.rb [options]
 
 # Use
 
+## System dependency
+
+make sure you have  `ruby 2.7+`, `curl` or `wget` will be helpful.
 ### step1:
 
 cd your git code repo:
