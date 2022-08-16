@@ -31,3 +31,17 @@ ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Mark24Code/check_996/mai
 ```bash
 ruby -e "$(wget https://raw.githubusercontent.com/Mark24Code/check_996/main/check_996.rb -O -)"
 ```
+
+## Tips：
+
+remote run add params 
+
+```
+ <script>  -- -s 10:30 -e 19:30
+```
+
+e.g.
+
+```bash
+ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Mark24Code/check_996/main/check_996.rb)" -- -s 10:30 -e 19:30
+```
