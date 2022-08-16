@@ -9,17 +9,24 @@ Usage: count_code.rb [options]
     -v, --version                    version
 ```
 
-Remote Run：
+# Use
 
-entry your code repo:
+### step1:
 
-curl support
+cd your git code repo:
+
+
+### step2: 
+
+run this code.
+
+* curl support
 
 ```bash
 ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Mark24Code/check_996/main/check_996.rb)"
 ```
 
-wget support
+* wget support
 
 ```bash
 ruby -e "$(wget https://raw.githubusercontent.com/Mark24Code/check_996/main/check_996.rb -O -)"
