@@ -199,7 +199,8 @@ OptionParser.new do |opts|
     puts "Check996 v1.0.0"
     puts ""
     puts "author: Mark24Code"
-    puts "repo: "
+    puts "repo: https://github.com/Mark24Code/check_996"
+    exit 0
   end
 end.parse!
 
