@@ -1,9 +1,11 @@
 # Check 996
 
+[中文README](./README_ZH_CN.md)
+
 Help your check repo 996 status. 😎
 
 ```
-Usage: count_code.rb [options]
+Usage: check_996.rb [options]
     -s, --start WORK_START_TIME      start job time e.g. 10:00:00
     -e, --end WORK_END_TIME          end job time  e.g. 18:00:00
     -g, --git-log GIT_LOG_CMD        use git log command, default is `git log --all`
