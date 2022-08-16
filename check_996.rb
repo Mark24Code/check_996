@@ -46,7 +46,7 @@ class GitCounter
   def get_git_commit_dates
     date_pattern = /Date:(.*)/
 
-    history = `git log --date=unix | cat`
+    history = `git log --all --date=unix | cat`
     raw_commits = history.split("\n\n")
 
     raw_commits.each do |c|
