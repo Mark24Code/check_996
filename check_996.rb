@@ -136,6 +136,22 @@ class GitCounter
     report_title = "=" * 8 + " Report " + "=" * 8
     puts report_title.cyan
     puts "You expected worktime: " + "#{@start_time} ~ #{@end_time}".green
+
+    if @range && @range.length == 2
+      range_start_time, range_end_time = @range
+      puts ""
+      puts "Commits time range:"
+      puts ""
+      time_range_str = range_start_time.to_time.to_s + ' ~ ' + range_end_time.to_s
+      puts time_range_str.cyan
+    else
+      puts ""
+      puts "Commits time range:"
+      puts ""
+      puts "all commit history".cyan
+      puts ""
+    end
+
     puts ""
     puts "Tips:"
     puts "Not your work time? You can change by `check_996 -s 10:00 -e 18:00`"
