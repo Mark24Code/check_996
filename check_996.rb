@@ -29,10 +29,12 @@ end
 
 class GitCounter
   def initialize(opts={})
-    @start_time = opts.fetch(:start_time, '10:00:00')
-    @end_time = opts.fetch(:end_time, '18:00:00')
+    @start_time = opts.fetch(:start_time, '10:30:00')
+    @end_time = opts.fetch(:end_time, '19:30:00')
 
     @range = opts.fetch(:range, nil)
+    @git_log = opts.fetch(:git_log, nil) || 'git log --all'
+
 
     @commits = []
 
@@ -46,7 +48,7 @@ class GitCounter
   def get_git_commit_dates
     date_pattern = /Date:(.*)/
 
-    history = `git log --all --date=unix | cat`
+    history = `#{@git_log} --date=unix | cat`
     raw_commits = history.split("\n\n")
 
     raw_commits.each do |c|
@@ -296,6 +298,15 @@ def validator_range(text)
   end
 end
 
+def validator_gitlog(text)
+  pattern = /git log .*/
+  if !pattern.match(text)
+    puts "invalid: " + "#{text}".yellow
+    puts "should be: git log .... "
+    exit 0
+  end
+end
+
 options = {}
 OptionParser.new do |opts|
   opts.banner = "Usage: count_code.rb [options]"
@@ -307,6 +318,15 @@ OptionParser.new do |opts|
   opts.on("-e WORK_END_TIME", "--end WORK_END_TIME", "end job time  e.g. 18:00:00") do |t|
     validator(t)
     options[:end_time] = t
+  end
+
+  opts.on("-g GIT_LOG_CMD", "--git-log GIT_LOG_CMD", "use git log command, default is `git log --all`") do |t|
+    if t
+      validator_gitlog(t)
+      options[:git_log] = t
+    else
+      options[:git_log] = nil
+    end
   end
 
   opts.on("-f FILTER", "--filter FILTER ", "time range filter  e.g. last_[day|week|month|year] last_5_[day|week|month|year]   '2022-01-01 08:10:00,2022-10-01 08:10:00'") do |t|
