@@ -29,6 +29,11 @@ class String
 end
 
 class GitCounter
+  attr_accessor :start_time
+  attr_accessor :end_time
+  attr_accessor :range
+  attr_accessor :git_log
+  attr_accessor :commits
   def initialize(opts={})
     @start_time = opts.fetch(:start_time, '10:30:00')
     @end_time = opts.fetch(:end_time, '19:30:00')
@@ -36,8 +41,7 @@ class GitCounter
     @range = opts.fetch(:range, nil)
     @git_log = opts.fetch(:git_log, nil) || 'git log --all'
 
-
-    @commits = []
+    @commits = opts.fetch(:commits, nil) || []
 
     @day_grouping = {}
 
@@ -197,157 +201,160 @@ class GitCounter
   end
 end
 
-require 'optparse'
 
-def format_time(raw_time)
-  range_time = raw_time.strip
+if __FILE__ == $0
+  require 'optparse'
 
-  if range_time.include? ":"
+  def format_time(raw_time)
+    range_time = raw_time.strip
 
+    if range_time.include? ":"
+
+    end
+    return ts
   end
-  return ts
-end
 
-def validator(text)
-  pattern = /\d\d:\d\d(:\d\d)?/
-  if !pattern.match(text)
-    puts "invalid: " + "#{text}".yellow
-    puts "-s / -e format must 24h string  e.g. 10:00:00 or 10:00  "
+  def validator(text)
+    pattern = /\d\d:\d\d(:\d\d)?/
+    if !pattern.match(text)
+      puts "invalid: " + "#{text}".yellow
+      puts "-s / -e format must 24h string  e.g. 10:00:00 or 10:00  "
+      exit 0
+    end
+  end
+
+  def invalid_param(i, msg = nil)
+    puts "invalid: " + "#{i}".yellow
+    if msg
+      puts "tips:".cyan + msg
+    end
+  end
+
+  def time_range_gen(time_type, time_count)
+    end_time = Time.now
+    
+    if time_type == 'day'
+      start_time = Date.today - time_count
+      end_time = Date.today
+    end
+
+    if time_type == 'week'
+      start_time = Date.today - time_count * 7
+    end
+
+    if time_type == 'month'
+      start_time = Date.today - time_count * 30
+    end
+
+    if time_type == 'year'
+      start_time = Date.today - time_count * 365
+    end
+
+    if time_type == 'range'
+      start_time, end_time = time_count
+    end
+
+    return [start_time, end_time]
+  end
+
+  def then_quit
     exit 0
   end
-end
 
-def invalid_param(i, msg = nil)
-  puts "invalid: " + "#{i}".yellow
-  if msg
-    puts "tips:".cyan + msg
-  end
-end
+  def validator_range(text)
+    text = text.strip
 
-def time_range_gen(time_type, time_count)
-  end_time = Time.now
-  
-  if time_type == 'day'
-    start_time = Date.today - time_count
-    end_time = Date.today
-  end
+    case text
+    when 'last_day'
+      return time_range_gen('day', 1)
+    when 'last_week'
+      return time_range_gen('week', 1)
+    when 'last_month'
+      return time_range_gen('month', 1)
+    when 'last_year'
+      return time_range_gen('year', 1)
+    when /last_(\d*)_(day|week|month|year)/
+      time_count = nil
+      if $1.to_i < 0
+        invalid_param(text, "#{$2} number should > 0")
+        then_quit
+      end
 
-  if time_type == 'week'
-    start_time = Date.today - time_count * 7
-  end
+      if $1.to_i == 0
+        puts "#{text} -> will use `last_#{$2}`"
+        time_range_gen($2, 1)
+      end
 
-  if time_type == 'month'
-    start_time = Date.today - time_count * 30
-  end
+      time_count = $1.to_i
+      return time_range_gen($2, time_count)
+    when /(\d{4}\-\d{2}\-\d{2} \d{2}:\d{2}:\d{2}),(\d{4}\-\d{2}\-\d{2} \d{2}:\d{2}:\d{2})/
+      ft = "%Y-%m-%d %T"
+      range_start_time_catch = $1
+      range_end_time_catch = $2
+      range_start_time = DateTime.strptime(range_start_time_catch,ft)
+      range_end_time = DateTime.strptime(range_end_time_catch,ft)
+      if range_start_time >= range_end_time
+        invalid_param(text, "time range order wrong. start_time < end_time")
+        then_quit
+      end
+      return time_range_gen('range', [range_start_time, range_end_time])
 
-  if time_type == 'year'
-    start_time = Date.today - time_count * 365
-  end
-
-  if time_type == 'range'
-    start_time, end_time = time_count
-  end
-
-  return [start_time, end_time]
-end
-
-def then_quit
-  exit 0
-end
-
-def validator_range(text)
-  text = text.strip
-
-  case text
-  when 'last_day'
-    return time_range_gen('day', 1)
-  when 'last_week'
-    return time_range_gen('week', 1)
-  when 'last_month'
-    return time_range_gen('month', 1)
-  when 'last_year'
-    return time_range_gen('year', 1)
-  when /last_(\d*)_(day|week|month|year)/
-    time_count = nil
-    if $1.to_i < 0
-      invalid_param(text, "#{$2} number should > 0")
+    else
+      puts "check your -f params, more details `-h`".yellow
       then_quit
     end
-
-    if $1.to_i == 0
-      puts "#{text} -> will use `last_#{$2}`"
-      time_range_gen($2, 1)
-    end
-
-    time_count = $1.to_i
-    return time_range_gen($2, time_count)
-  when /(\d{4}\-\d{2}\-\d{2} \d{2}:\d{2}:\d{2}),(\d{4}\-\d{2}\-\d{2} \d{2}:\d{2}:\d{2})/
-    ft = "%Y-%m-%d %T"
-    range_start_time_catch = $1
-    range_end_time_catch = $2
-    range_start_time = DateTime.strptime(range_start_time_catch,ft)
-    range_end_time = DateTime.strptime(range_end_time_catch,ft)
-    if range_start_time >= range_end_time
-      invalid_param(text, "time range order wrong. start_time < end_time")
-      then_quit
-    end
-    return time_range_gen('range', [range_start_time, range_end_time])
-
-  else
-    puts "check your -f params, more details `-h`".yellow
-    then_quit
   end
+
+  def validator_gitlog(text)
+    pattern = /git log .*/
+    if !pattern.match(text)
+      puts "invalid: " + "#{text}".yellow
+      puts "should be: git log .... "
+      exit 0
+    end
+  end
+
+
+  options = {}
+  OptionParser.new do |opts|
+    opts.banner = "Usage: count_code.rb [options]"
+
+    opts.on("-s WORK_START_TIME", "--start WORK_START_TIME", "start job time e.g. 10:00:00") do |t|
+      validator(t)
+      options[:start_time] = t
+    end
+    opts.on("-e WORK_END_TIME", "--end WORK_END_TIME", "end job time  e.g. 18:00:00") do |t|
+      validator(t)
+      options[:end_time] = t
+    end
+
+    opts.on("-g GIT_LOG_CMD", "--git-log GIT_LOG_CMD", "use git log command, default is `git log --all`") do |t|
+      if t
+        validator_gitlog(t)
+        options[:git_log] = t
+      else
+        options[:git_log] = nil
+      end
+    end
+
+    opts.on("-f FILTER", "--filter FILTER ", "time range filter  e.g. last_[day|week|month|year] last_5_[day|week|month|year]   '2022-01-01 08:10:00,2022-10-01 08:10:00'") do |t|
+      if t
+        range_time = validator_range(t)
+        options[:range] = range_time
+      else
+        options[:range] = nil
+      end
+
+    end
+
+    opts.on("-v", "--version", "version") do
+      puts "Check996 v#{VERSION}"
+      puts ""
+      puts "author: Mark24Code"
+      puts "repo: https://github.com/Mark24Code/check_996"
+      exit 0
+    end
+  end.parse!
+  # puts options
+  GitCounter.new(options).run
 end
-
-def validator_gitlog(text)
-  pattern = /git log .*/
-  if !pattern.match(text)
-    puts "invalid: " + "#{text}".yellow
-    puts "should be: git log .... "
-    exit 0
-  end
-end
-
-options = {}
-OptionParser.new do |opts|
-  opts.banner = "Usage: count_code.rb [options]"
-
-  opts.on("-s WORK_START_TIME", "--start WORK_START_TIME", "start job time e.g. 10:00:00") do |t|
-    validator(t)
-    options[:start_time] = t
-  end
-  opts.on("-e WORK_END_TIME", "--end WORK_END_TIME", "end job time  e.g. 18:00:00") do |t|
-    validator(t)
-    options[:end_time] = t
-  end
-
-  opts.on("-g GIT_LOG_CMD", "--git-log GIT_LOG_CMD", "use git log command, default is `git log --all`") do |t|
-    if t
-      validator_gitlog(t)
-      options[:git_log] = t
-    else
-      options[:git_log] = nil
-    end
-  end
-
-  opts.on("-f FILTER", "--filter FILTER ", "time range filter  e.g. last_[day|week|month|year] last_5_[day|week|month|year]   '2022-01-01 08:10:00,2022-10-01 08:10:00'") do |t|
-    if t
-      range_time = validator_range(t)
-      options[:range] = range_time
-    else
-      options[:range] = nil
-    end
-
-  end
-
-  opts.on("-v", "--version", "version") do
-    puts "Check996 v#{VERSION}"
-    puts ""
-    puts "author: Mark24Code"
-    puts "repo: https://github.com/Mark24Code/check_996"
-    exit 0
-  end
-end.parse!
-
-# puts options
-GitCounter.new(options).run
