@@ -128,7 +128,7 @@ class GitCounter
     end
   
     if percent >= 30 && percent < 60
-      result = "😰" + "\tBad! Amost 30% ~ 60% time overtime, you need change it!".red
+      result = "😰" + "\tBad! Almost 30% ~ 60% time overtime, you need change it!".red
     end
 
     if percent >= 60
