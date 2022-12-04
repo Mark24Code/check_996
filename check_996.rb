@@ -4,25 +4,31 @@ require 'time'
 require 'date'
 
 DAY_BEGIN = '00:00:00'
-DAY_END   = '23:59:59'
+DAY_END = '23:59:59'
 
 VERSION = "1.0.0"
+
 class String
   def blue
     return "\033[34m #{self}\033[0m"
   end
+
   def red
     return "\033[31m #{self}\033[0m"
   end
+
   def green
     return "\033[32m #{self}\033[0m"
   end
+
   def yellow
     return "\033[33m #{self}\033[0m"
   end
+
   def magenta
     return "\033[35m #{self}\033[0m"
   end
+
   def cyan
     return "\033[36m #{self}\033[0m"
   end
@@ -34,7 +40,8 @@ class GitCounter
   attr_accessor :range
   attr_accessor :git_log
   attr_accessor :commits
-  def initialize(opts={})
+
+  def initialize(opts = {})
     @start_time = opts.fetch(:start_time, '10:30:00')
     @end_time = opts.fetch(:end_time, '19:30:00')
 
@@ -47,21 +54,40 @@ class GitCounter
 
     @overtime_count = 0
     @overtime_begin = []
-    @overtime_end   = []
+    @overtime_end = []
   end
 
   def get_git_commit_dates
+
+    commit_pattern = /commit (.*)/
     date_pattern = /Date:(.*)/
+    author_pattern = /Author:(.*)/
 
     history = `#{@git_log} --date=unix | cat`
     raw_commits = history.split("\n\n")
+    raw_commits.each do |row_commit_str|
+      row_commit_array = row_commit_str.split("\n")
+      p row_commit_array
+      if row_commit_array.length > 1
+        date = ""
+        author = ""
+        commit_id = ""
+        if commit_pattern.match(row_commit_array[0])
+          commit_id = $1.lstrip
+        end
+        if author_pattern.match(row_commit_array[1])
+          author = $1.lstrip
+        end
+        if date_pattern.match(row_commit_array[2])
+          date = Time.at($1.strip.to_i)
+        end
 
-    raw_commits.each do |c|
-      if date_pattern.match(c)
-        @commits.push Time.at($1.strip.to_i)
+        commit = Commit.new(date,author,commit_id)
+        if commit.date != ""
+          @commits.push commit
+        end
       end
     end
-
     # filter
     if @range && @range.length == 2
 
@@ -70,16 +96,16 @@ class GitCounter
       unix_end = range_end_time.to_time
 
       @commits = @commits.select do |c|
-        return c >= unix_start && c <= unix_end
+        return c.date >= unix_start && c.date <= unix_end
       end
     end
 
   end
 
-  def day_grouping(commit_time)
-    work_day = Time.parse(DAY_BEGIN,commit_time)
+  def day_grouping(commit)
+    work_day = Time.parse(DAY_BEGIN, commit.date)
     @day_grouping[work_day] ||= []
-    @day_grouping[work_day].push(commit_time)
+    @day_grouping[work_day].push(commit)
   end
 
   def grouping_commits
@@ -90,29 +116,29 @@ class GitCounter
 
   def calc_overtime
     work_days = @day_grouping.keys
-    work_days.each do | work_day|
+    work_days.each do |work_day|
       this_day_commits = @day_grouping[work_day]
 
       job_start_time = Time.parse(@start_time, work_day)
       job_end_time = Time.parse(@end_time, work_day)
 
-      this_day_commits.each do | one_commit_time |
-        if one_commit_time < job_start_time 
+      this_day_commits.each do |one_commit|
+        if one_commit.date < job_start_time
           @overtime_count += 1
-          @overtime_begin << one_commit_time
+          @overtime_begin << one_commit
         end
 
-        if one_commit_time > job_end_time
+        if one_commit.date > job_end_time
           @overtime_count += 1
-          @overtime_end << one_commit_time
+          @overtime_end << one_commit
         end
-      end 
+      end
     end
   end
 
   def sort_overtime_range(time_arr)
-    result = time_arr.map { |t| t.strftime("%T") }
-    result.sort!
+    # result = time_arr.map { |t| t.date.strftime("%T") }
+    time_arr.sort_by{|a| a.date}
   end
 
   def icu_996_report(percent)
@@ -126,7 +152,7 @@ class GitCounter
     if percent > 5 && percent < 30
       result = "😑" + "\temmm... you maybe tired a lot.".yellow
     end
-  
+
     if percent >= 30 && percent < 60
       result = "😰" + "\tBad! Almost 30% ~ 60% time overtime, you need change it!".red
     end
@@ -142,7 +168,7 @@ class GitCounter
   def report
     report_title = "=" * 8 + " Check 996 Report " + "=" * 8
     puts report_title.cyan
-    puts "You expected worktime: " + "#{@start_time} ~ #{@end_time}".green
+    puts "You expected work time: " + "#{@start_time} ~ #{@end_time}".green
 
     if @range && @range.length == 2
       range_start_time, range_end_time = @range
@@ -173,7 +199,7 @@ class GitCounter
 
     if top3 && top3.length > 0
       top3.each do |et|
-        puts et.red
+        puts "#{et.date.strftime("%F %T").red} #{et.author.red} #{et.commit_id[0..5].red}"
       end
     else
       puts "no data".cyan
@@ -183,8 +209,8 @@ class GitCounter
     end_time_range = sort_overtime_range(@overtime_end)
     bottom3 = end_time_range[-3..]
     if bottom3 && bottom3.length > 0
-        bottom3.each do |et|
-        puts et.red
+      bottom3.each do |et|
+        puts "#{et.date.strftime("%F %T").red} #{et.author.red} #{et.commit_id[0..5].red}"
       end
     else
       puts "no data".cyan
@@ -201,6 +227,17 @@ class GitCounter
   end
 end
 
+class Commit
+  attr_accessor :date
+  attr_accessor :author
+  attr_accessor :commit_id
+
+  def initialize(date, author, commit_id)
+    @date = date
+    @author = author
+    @commit_id = commit_id
+  end
+end
 
 if __FILE__ == $0
   require 'optparse'
@@ -232,7 +269,7 @@ if __FILE__ == $0
 
   def time_range_gen(time_type, time_count)
     end_time = Time.now
-    
+
     if time_type == 'day'
       start_time = Date.today - time_count
       end_time = Date.today
@@ -291,8 +328,8 @@ if __FILE__ == $0
       ft = "%Y-%m-%d %T"
       range_start_time_catch = $1
       range_end_time_catch = $2
-      range_start_time = DateTime.strptime(range_start_time_catch,ft)
-      range_end_time = DateTime.strptime(range_end_time_catch,ft)
+      range_start_time = DateTime.strptime(range_start_time_catch, ft)
+      range_end_time = DateTime.strptime(range_end_time_catch, ft)
       if range_start_time >= range_end_time
         invalid_param(text, "time range order wrong. start_time < end_time")
         then_quit
@@ -313,7 +350,6 @@ if __FILE__ == $0
       exit 0
     end
   end
-
 
   options = {}
   OptionParser.new do |opts|
